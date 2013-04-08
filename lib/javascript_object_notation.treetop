@@ -1,12 +1,107 @@
 grammar JavaScriptObjectNotation
-  # Your solution goes here
+  rule json
+    object / nothing
+  end
 
-  # Just scribbling on the blank page
-  rule nothing
-    "" {
-      def to_hash
-        :nowt
+  rule object
+    object_with_stuff / empty_object
+  end
+
+  rule empty_object
+    "{" blank "}" {
+      def to_object
+        {}
       end
     }
+  end
+
+  rule object_with_stuff
+    "{" first:pair_with_blanks rest:(blank "," next:pair_with_blanks)* "}" {
+      def to_object
+        a = first.keyval.to_pair + rest.elements.map {|e| e.next.keyval.to_pair }.flatten
+
+        Hash[*a]
+      end
+    }
+  end
+
+  rule pair_with_blanks
+    blank keyval:pair blank
+  end
+
+  rule pair
+    k:key blank separator blank v:value {
+      def to_pair
+        [k.to_object, v.to_object]
+      end
+    }
+  end
+
+  rule key
+    string
+  end
+
+  rule value
+    string / integer / object / array
+  end
+
+  rule array
+    array_with_elements / empty_array
+  end
+
+  rule empty_array
+    "[" blank "]" {
+      def to_object
+        []
+      end
+    }
+  end
+
+  rule array_with_elements
+    '[' blank first:value blank rest:(',' blank next:value blank)* ']' {
+      def to_object
+        [ first.to_object ] + rest.elements.map{|e| e.next.to_object}
+      end
+    }
+  end
+
+  rule string
+    quote value:[a-zA-Z0-9_]+ quote {
+      def to_object
+        value.text_value
+      end
+    }
+  end
+
+  rule integer
+    minus? [0-9]+ {
+      def to_object
+        text_value.to_i
+      end
+    }
+  end
+
+  rule minus
+    "-"
+  end
+
+  rule quote
+    '"'
+  end
+
+  rule separator
+    ":"
+  end
+
+  rule nothing
+    "" {
+      def to_object
+        :nothing
+      end
+    }
+  end
+
+  rule blank
+    " "*
   end
 end
