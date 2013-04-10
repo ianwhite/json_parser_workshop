@@ -1,13 +1,13 @@
 grammar JavaScriptObjectNotation
   rule json
-    object / nothing
+    hash / nothing
   end
 
-  rule object
-    non_empty_object / empty_object
+  rule hash
+    empty_hash / hash_with_elements
   end
 
-  rule empty_object
+  rule empty_hash
     "{" blank "}" {
       def to_object
         {}
@@ -15,8 +15,8 @@ grammar JavaScriptObjectNotation
     }
   end
 
-  rule non_empty_object
-    "{" blank first:keyval blank rest:("," blank next:keyval blank)* "}" {
+  rule hash_with_elements
+    "{" blank first:hash_element blank rest:("," blank next:hash_element blank)* "}" {
       def to_object
         rest.elements.each_with_object(first.to_object) do |e, hash|
           hash.merge!(e.next.to_object)
@@ -25,24 +25,16 @@ grammar JavaScriptObjectNotation
     }
   end
 
-  rule keyval
-    key blank separator blank value {
+  rule hash_element
+    key blank separator blank object {
       def to_object
-        {key.to_object => value.to_object}
+        {key.to_object => object.to_object}
       end
     }
   end
 
-  rule key
-    string
-  end
-
-  rule value
-    string / integer / object / array
-  end
-
   rule array
-    array_with_elements / empty_array
+    empty_array / array_with_elements
   end
 
   rule empty_array
@@ -54,7 +46,7 @@ grammar JavaScriptObjectNotation
   end
 
   rule array_with_elements
-    '[' blank first:value blank rest:(',' blank next:value blank)* ']' {
+    '[' blank first:array_element blank rest:(',' blank next:array_element blank)* ']' {
       def to_object
         rest.elements.each_with_object([first.to_object]) do |e, array|
           array << e.next.to_object
@@ -63,8 +55,20 @@ grammar JavaScriptObjectNotation
     }
   end
 
+  rule array_element
+    object
+  end
+
+  rule key
+    string
+  end
+
+  rule object
+    string / integer / hash / array
+  end
+
   rule string
-    quote quoted:[a-zA-Z0-9_]+ quote {
+    quote quoted:[\w]* quote {
       def to_object
         quoted.text_value
       end
